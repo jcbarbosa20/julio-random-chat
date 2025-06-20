@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JULIO'S RANDOM CHAT</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0044cc, #00ffcc);
+      color: #fff;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: #fff;
+      text-align: center;
+      font-weight: bold;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .video-container {
+      position: relative;
+      width: 80%;
+      height: 80%;
+      border-radius: 10px;
+      background: #333;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      animation: slideUp 1.5s ease-in-out;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      z-index: 10;
+      visibility: hidden;
+    }
+
+    .controls.visible {
+      visibility: visible;
+    }
+
+    button {
+      padding: 12px 20px;
+      background-color: #ff3366;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #ff6699;
+      transform: scale(1.05);
+    }
+
+    #location {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    #flag {
+      width: 40px;
+      height: 25px;
+      margin-top: 10px;
+      border-radius: 5px;
+      background-size: cover;
+      background-position: center;
+    }
+
+    #ad-space {
+      width: 100%;
+      position: absolute;
+      bottom: 0;
+      padding: 10px;
+      background-color: #222;
+      text-align: center;
+      color: white;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      0% { transform: translateY(50%); }
+      100% { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page" id="landing-page">
+    <h1>JULIO'S RANDOM CHAT 😉</h1>
+    <p>Meet new people from around the world with video chat!</p>
+    <button id="start-btn">Start Chat</button>
+  </div>
+
+  <div class="page hidden" id="chat-page">
+    <div class="video-container" id="video-container">
+      <video id="local-video" autoplay muted></video>
+      <video id="remote-video" autoplay></video>
+    </div>
+    <div class="controls" id="controls">
+      <button id="skip-btn">Next User</button>
+      <button id="leave-btn">Leave Chat</button>
+    </div>
+    <div id="location">Location: Loading...</div>
+    <div id="flag"></div>
+  </div>
+
+  <div id="ad-space">
+    <!-- Google AdSense Placeholder -->
+    Advertisement goes here
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("start-btn");
+    const skipBtn = document.getElementById("skip-btn");
+    const leaveBtn = document.getElementById("leave-btn");
+    const localVideo = document.getElementById("local-video");
+    const remoteVideo = document.getElementById("remote-video");
+    const locationText = document.getElementById("location");
+    const flag = document.getElementById("flag");
+    const landingPage = document.getElementById("landing-page");
+    const chatPage = document.getElementById("chat-page");
+    const controls = document.getElementById("controls");
+
+    let localStream;
+
+    startBtn.addEventListener("click", () => {
+      landingPage.classList.add("hidden");
+      chatPage.classList.remove("hidden");
+      controls.classList.add("visible");
+      getUserLocation();
+      startVideoChat();
+    });
+
+    skipBtn.addEventListener("click", () => {
+      remoteVideo.srcObject = null;
+      startVideoChat();
+    });
+
+    leaveBtn.addEventListener("click", () => {
+      window.location.reload();
+    });
+
+    function getUserLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+      } else {
+        locationText.textContent = "Geolocation not supported.";
+      }
+
+      function successCallback(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        fetch(`https://geocode.xyz/${lat},${lon}?json=1`)
+          .then(response => response.json())
+          .then(data => {
+            const country = data.country || "Unknown";
+            locationText.textContent = `You are in ${country}`;
+            setCountryFlag(country);
+          })
+          .catch(() => {
+            locationText.textContent = "Could not fetch location.";
+          });
+      }
+
+      function errorCallback() {
+        locationText.textContent = "Location access denied.";
+      }
+    }
+
+    function setCountryFlag(country) {
+      const countryFlags = {
+        'United States': 'https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg',
+        'Germany': 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Flag_of_Germany.svg',
+      };
+      flag.style.backgroundImage = `url(${countryFlags[country] || 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Flag_of_the_United_Nations.svg'})`;
+    }
+
+    function startVideoChat() {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          localStream = stream;
+          localVideo.srcObject = stream;
+
+          // Simulate a remote stream for testing
+          setTimeout(() => {
+            remoteVideo.srcObject = stream;
+          }, 1000);
+        })
+        .catch(err => {
+          console.error("Error accessing media devices.", err);
+        });
+    }
+  </script>
+</body>
+</html>
